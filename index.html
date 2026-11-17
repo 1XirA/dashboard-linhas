@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DNR | Dashboard de Linhas</title>
+<style>
+  :root { --bg:#F6F7F9; --panel:#FFFFFF; --fg:#1F2937; --muted:#6B7280; --line:#E5E7EB; --accent:#1A9FD6; --roxo:#7C3AED; --cinza:#9CA3AF;
+    --ok:#1E7B45; --warn:#9A6700; --bad:#B42318; --head:#0F2A44; --headfg:#FFFFFF; color-scheme: light; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#0E1116; --panel:#161B22; --fg:#E6EDF3; --muted:#9AA4B2; --line:#2A313C;
+    --ok:#3FB950; --warn:#D29922; --bad:#F85149; --head:#22303F; --headfg:#E6EDF3; color-scheme: dark; } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:14px/1.45 "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif; }
+  .bv { max-width:1500px; margin:0 auto; padding:24px 16px 40px; display:grid; gap:18px; }
+  .bv-title { margin:0; font-size:1.9rem; font-weight:700; letter-spacing:-.01em; }
+  .bv-title span { color:var(--muted); font-weight:400; margin:0 .35em; }
+  .bv-sub { margin:4px 0 0; color:var(--muted); }
+  .bv-kpis { display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:12px; }
+  .bv-kpi { position:relative; overflow:hidden; background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:18px 16px 14px; display:grid; gap:4px; }
+  .bv-kpi::before { content:""; position:absolute; inset:0 0 auto 0; height:4px; background:var(--bar, var(--accent)); }
+  .bv-kpi-label { font-size:12px; color:var(--muted); letter-spacing:.06em; text-transform:uppercase; font-weight:600; }
+  .bv-kpi-value { font-size:2rem; font-weight:700; line-height:1.15; font-variant-numeric:tabular-nums; }
+  .bv-kpi-value.neg { color:var(--bad); }
+  .bv-kpi-sub { font-size:12px; color:var(--muted); font-variant-numeric:tabular-nums; }
+  .bv-acoes { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px; font-size:12px; color:var(--muted); }
+  .bv-acoes button { font:inherit; padding:4px 12px; border-radius:6px; border:1px solid var(--line); background:var(--panel); color:var(--fg); cursor:pointer; }
+  .bv-acoes button:hover { border-color:var(--accent); }
+  .bv-bloco { display:flex; flex-wrap:wrap; align-items:baseline; justify-content:space-between; gap:4px 16px; border-bottom:2px solid var(--accent); padding:8px 0 6px; margin-top:8px; }
+  .bv-bloco h2 { margin:0; font-size:1.15rem; }
+  .bv-bloco p { margin:0; color:var(--muted); font-size:12px; font-variant-numeric:tabular-nums; }
+  .bv-tablebox { overflow-x:auto; border:1px solid var(--line); border-radius:10px; background:var(--panel); margin-top:10px; }
+  table { width:100%; border-collapse:collapse; }
+  th { background:var(--head); color:var(--headfg); text-align:center; font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:.04em; padding:8px 10px; white-space:nowrap; }
+  th:first-child { text-align:left; }
+  td { padding:7px 10px; border-bottom:1px solid var(--line); white-space:nowrap; text-align:center; vertical-align:middle; }
+  td.esq { text-align:left; } td.num { font-variant-numeric:tabular-nums; } td.mudo { color:var(--muted); }
+  tr.zebra td:not(.merge) { background:color-mix(in srgb, var(--fg) 2.5%, transparent); }
+  tr.bm td { background:color-mix(in srgb, var(--accent) 9%, var(--panel)); border-left:4px solid var(--accent); text-align:left; padding:8px 12px; }
+  tr.bm small { color:var(--muted); margin-left:.6em; } tr.bm .res { float:right; color:var(--muted); font-size:12px; }
+  td.merge { border-left:1px solid var(--line); border-right:1px solid var(--line); font-weight:700; font-size:1.05rem; font-variant-numeric:tabular-nums; }
+  td.cap { background:color-mix(in srgb, var(--accent) 10%, var(--panel)); }
+  td.real { background:color-mix(in srgb, var(--ok) 12%, var(--panel)); color:var(--ok); }
+  td.real.neg { background:color-mix(in srgb, var(--bad) 12%, var(--panel)); color:var(--bad); }
+  td.real small { display:block; font-weight:400; font-size:11px; color:var(--muted); margin-top:2px; }
+  .pill { display:inline-block; padding:2px 10px; border-radius:999px; font-size:12px; font-weight:600; }
+  .pill.ok { color:var(--ok); background:color-mix(in srgb, var(--ok) 14%, transparent); }
+  .pill.warn { color:var(--warn); background:color-mix(in srgb, var(--warn) 16%, transparent); }
+  .pill.bad { color:var(--bad); background:color-mix(in srgb, var(--bad) 14%, transparent); }
+  .pill.nd { color:var(--muted); background:color-mix(in srgb, var(--muted) 12%, transparent); }
+  .proj { width:6.2rem; padding:4px 8px; border:1px dashed var(--warn); border-radius:6px; background:color-mix(in srgb, var(--warn) 10%, transparent);
+    color:var(--fg); font:inherit; font-variant-numeric:tabular-nums; text-align:right; }
+  .proj:focus-visible { outline:2px solid var(--warn); outline-offset:1px; }
+  details { font-size:12px; color:var(--muted); }
+  details ul { margin:8px 0 0; padding-left:1.2em; display:grid; gap:4px; line-height:1.5; }
+</style>
+</head>
+<body>
+<div class="bv">
+  <header>
+    <h1 class="bv-title">DNR<span>|</span>Dashboard de Linhas</h1>
+    <p class="bv-sub">Linhas WhatsApp por BM · ativas e receptivas · atualizado em 17/11/2026 · sessões de 16/11/2026</p>
+  </header>
+  <section class="bv-kpis" aria-label="Indicadores">
+    <div class="bv-kpi" style="--bar:var(--fg)"><span class="bv-kpi-label">Total de linhas</span><span class="bv-kpi-value" id="k-linhas">—</span><span class="bv-kpi-sub" id="k-blocos">—</span></div>
+    <div class="bv-kpi" style="--bar:var(--ok)"><span class="bv-kpi-label">Disponibilidade</span><span class="bv-kpi-value" id="k-disp">—</span><span class="bv-kpi-sub" id="k-disp-sub">—</span></div>
+    <div class="bv-kpi" style="--bar:var(--bad)"><span class="bv-kpi-label">Sinalizadas</span><span class="bv-kpi-value" id="k-sinal">—</span><span class="bv-kpi-sub">saúde diferente de alta</span></div>
+    <div class="bv-kpi" style="--bar:var(--accent)"><span class="bv-kpi-label">Capacidade</span><span class="bv-kpi-value" id="k-cap">—</span><span class="bv-kpi-sub">disparos por dia</span></div>
+    <div class="bv-kpi" style="--bar:var(--ok)"><span class="bv-kpi-label">Capacidade real</span><span class="bv-kpi-value" id="k-real">—</span><span class="bv-kpi-sub" id="k-real-sub">—</span></div>
+    <div class="bv-kpi" style="--bar:var(--cinza)"><span class="bv-kpi-label">Denúncias 30d</span><span class="bv-kpi-value">—</span><span class="bv-kpi-sub">sem fonte ainda</span></div>
+    <div class="bv-kpi" style="--bar:var(--roxo)"><span class="bv-kpi-label">BMs</span><span class="bv-kpi-value" id="k-bms">—</span><span class="bv-kpi-sub">portfólios</span></div>
+  </section>
+  <div class="bv-acoes">
+    <span>Digite a <b>Projeção</b> de cada linha (campo amarelo). A Capacidade Real da conta desconta na hora; nada é salvo.</span>
+    <button type="button" id="limpar">Limpar projeções</button>
+  </div>
+  <section id="blocos" aria-label="Linhas por bloco e BM"></section>
+  <details>
+    <summary>Como os números são calculados</summary>
+    <ul><li>Capacidade/dia é da conta (BM), pelo limite: 250 = 60, 2k = 450, 10k = 2.200, 100k = 4.000 disparos, se a conta tem ao menos uma linha que envia, recebe e está verde; senão 0.</li><li>Capacidade Real = Capacidade/dia − Σ sessões abertas d-1 − Σ Projeção de todas as linhas da conta (ativas e receptivas). Fica vermelha se negativa.</li><li>Sessões abertas d-1 = clientes distintos que abriram conversa com a linha no dia anterior (analítico de conversas do MKTZap).</li><li>Sem WhatsApp e sem entrega no teste contam como BANIDA. N/D e banidas ficam no fim de cada grupo.</li><li>Denúncias e fim de restrição ainda não têm fonte.</li></ul>
+  </details>
+</div>
+<script>
+const DADOS = {"rows": [{"conta": "BM não informada (só no MKTZap)", "conta_id": "", "bloco": "Receptiva", "carteira": "BB RECEPTIVO OFICIAL", "numero": "(11) 4081-5290", "saude": "ALTA", "envia": "Sim", "recebe": "Sim", "disponivel": true, "capacidade_bm": "100k", "capacidade_dia_conta": 4000, "sessoes_d1": 164, "ferramenta": "MKTZap", "aquecimento": "Produção"}, {"conta": "BM não informada (só no MKTZap)", "conta_id": "", "bloco": "Receptiva", "carteira": "C6 BANK RECEPTIVO", "numero": "(11) 5330-1479", "saude": "ALTA", "envia": "Sim", "recebe": "Sim", "disponivel": true, "capacidade_bm": "100k", "capacidade_dia_conta": 4000, "sessoes_d1": 256, "ferramenta": "MKTZap", "aquecimento": "Produção"}, {"conta": "BM não informada (só no MKTZap)", "conta_id": "", "bloco": "Receptiva", "carteira": "CASAS BAHIA RECEPTIVO", "numero": "(11) 5330-1293", "saude": "ALTA", "envia": "Sim", "recebe": "Sim", "disponivel": true, "capacidade_bm": "100k", "capacidade_dia_conta": 4000, "sessoes_d1": 13, "ferramenta": "MKTZap", "aquecimento": "Produção"}, {"conta": "BM não informada (só no MKTZap)", "conta_id": "", "bloco": "Receptiva", "carteira": "DNR RECEPTIVO GERAL", "numero": "(11) 3777-4039", "saude": "ALTA", "envia": "Sim", "recebe": "Sim", "disponivel": true, "capacidade_bm": "100k", "capacidade_dia_conta": 4000, "sessoes_d1": 17, "ferramenta": "MKTZap", "aquecimento": "Produção"}, {"conta": "BM não informada (só no MKTZap)", "conta_id": "", "bloco": "Receptiva", "carteira": "MERCADO PAGO RECEPTIVO", "numero": "(11) 5330-1294", "saude": "ALTA", "envia": "Sim", "recebe": "Sim", "disponivel": true, "capacidade_bm": "100k", "capacidade_dia_conta": 4000, "sessoes_d1": 69, "ferramenta": "MKTZap", "aquecimento": "Produção"}, {"conta": "BM não informada (só no MKTZap)", "conta_id": "", "bloco": "Receptiva", "carteira": "MERCADO PAGO VEICULOS RECEPTIVO", "numero": "(11) 5330-1478", "saude": "ALTA", "envia": "Sim", "recebe": "Sim", "disponivel": true, "capacidade_bm": "100k", "capacidade_dia_conta": 4000, "sessoes_d1": 5, "ferramenta": "MKTZap", "aquecimento": "Produção"}, {"conta": "BM não informada (só no MKTZap)", "conta_id": "", "bloco": "Receptiva", "carteira": "PICPAY RECEPTIVO", "numero": "(11) 5330-1475", "saude": "ALTA", "envia": "Sim", "recebe": "Sim", "disponivel": true, "capacidade_bm": "100k", "capacidade_dia_conta": 4000, "sessoes_d1": 1, "ferramenta": "MKTZap", "aquecimento": "Produção"}, {"conta": "BM não informada (só no MKTZap)", "conta_id": "", "bloco": "Receptiva", "carteira": "PORTO AMIGAVEL RECEPTIVO", "numero": "(11) 5330-1297", "saude": "ALTA", "envia": "Sim", "recebe": "Sim", "disponivel": true, "capacidade_bm": "100k", "capacidade_dia_conta": 4000, "sessoes_d1": 2, "ferramenta": "MKTZap", "aquecimento": "Produção"}, {"conta": "BM não informada (só no MKTZap)", "conta_id": "", "bloco": "Receptiva", "carteira": "PORTO CARTÕES RECEPTIVO", "numero": "(11) 5330-1296", "saude": "ALTA", "envia": "Sim", "recebe": "Sim", "disponivel": true, "capacidade_bm": "100k", "capacidade_dia_conta": 4000, "sessoes_d1": 9, "ferramenta": "MKTZap", "aquecimento": "Produção"}, {"conta": "BM não informada (só no MKTZap)", "conta_id": "", "bloco": "Receptiva", "carteira": "PORTO CONTENCIOSO RECEPTIVO", "numero": "(11) 5330-1471", "saude": "ALTA", "envia": "Sim", "recebe": "Sim", "disponivel": true, "capacidade_bm": "100k", "capacidade_dia_conta": 4000, "sessoes_d1": 3, "ferramenta": "MKTZap", "aquecimento": "Produção"}, {"conta": "BM não informada (só no MKTZap)", "conta_id": "", "bloco": "Receptiva", "carteira": "Santander - Receptivo", "numero": "(11) 96743-2195", "saude": "N/D", "envia": "Não", "recebe": "Não", "disponivel": false, "capacidade_bm": "100k", "capacidade_dia_conta": 4000, "sessoes_d1": 0, "ferramenta": "MKTZap", "aquecimento": ""}, {"conta": "BM não informada (só no MKTZap)", "conta_id": "", "bloco": "Receptiva", "carteira": "AI Quanta - Receptivo", "numero": "(11) 96978-7655", "saude": "BANIDA", "envia": "Não", "recebe": "Não", "disponivel": false, "capacidade_bm": "100k", "capacidade_dia_conta": 4000, "sessoes_d1": 0, "ferramenta": "MKTZap", "aquecimento": "Produção"}, {"conta": "BM não informada (só no MKTZap)", "conta_id": "", "bloco": "Receptiva", "carteira": "Banco Mercantil Oficial", "numero": "(11) 98473-0304", "saude": "BANIDA", "envia": "Não", "recebe": "Não", "disponivel": false, "capacidade_bm": "100k", "capacidade_dia_conta": 4000, "sessoes_d1": 0, "ferramenta": "MKTZap", "aquecimento": "Produção"}, {"conta": "BM não informada (só no MKTZap)", "conta_id": "", "bloco": "Receptiva", "carteira": "Banco Mercantil Oficial", "numero": "(11) 96743-9517", "saude": "BANIDA", "envia": "Não", "recebe": "Não", "disponivel": false, "capacidade_bm": "100k", "capacidade_dia_conta": 4000, "sessoes_d1": 0, "ferramenta": "MKTZap", "aquecimento": "Produção"}, {"conta": "BM não informada (só no MKTZap)", "conta_id": "", "bloco": "Receptiva", "carteira": "Santander - Receptivo", "numero": "(11) 96669-9664", "saude": "BANIDA", "envia": "Não", "recebe": "Não", "disponivel": false, "capacidade_bm": "100k", "capacidade_dia_conta": 4000, "sessoes_d1": 0, "ferramenta": "MKTZap", "aquecimento": "Produção"}, {"conta": "BM não informada (só no MKTZap)", "conta_id": "", "bloco": "Ativa", "carteira": "BB ATIVO OFICIAL", "numero": "(11) 5330-1476", "saude": "ALTA", "envia": "Sim", "recebe": "Sim", "disponivel": true, "capacidade_bm": "100k", "capacidade_dia_conta": 4000, "sessoes_d1": 57, "ferramenta": "MKTZap", "aquecimento": "Produção"}, {"conta": "BM não informada (só no MKTZap)", "conta_id": "", "bloco": "Ativa", "carteira": "C6BANK ATIVO", "numero": "(11) 3711-9925", "saude": "ALTA", "envia": "Sim", "recebe": "Sim", "disponivel": true, "capacidade_bm": "100k", "capacidade_dia_conta": 4000, "sessoes_d1": 52, "ferramenta": "MKTZap", "aquecimento": "Produção"}, {"conta": "BM não informada (só no MKTZap)", "conta_id": "", "bloco": "Ativa", "carteira": "CASAS BAHIA ATIVO", "numero": "(11) 3777-7169", "saude": "ALTA", "envia": "Sim", "recebe": "Sim", "disponivel": true, "capacidade_bm": "100k", "capacidade_dia_conta": 4000, "sessoes_d1": 1, "ferramenta": "MKTZap", "aquecimento": "Produção"}, {"conta": "BM não informada (só no MKTZap)", "conta_id": "", "bloco": "Ativa", "carteira": "MERCADO PAGO ATIVO", "numero": "(11) 5330-1477", "saude": "ALTA", "envia": "Sim", "recebe": "Sim", "disponivel": true, "capacidade_bm": "100k", "capacidade_dia_conta": 4000, "sessoes_d1": 1, "ferramenta": "MKTZap", "aquecimento": "Produção"}, {"conta": "BM não informada (só no MKTZap)", "conta_id": "", "bloco": "Ativa", "carteira": "MERCADO PAGO VEÍCULOS ATIVO", "numero": "(11) 5330-1295", "saude": "ALTA", "envia": "Sim", "recebe": "Sim", "disponivel": true, "capacidade_bm": "100k", "capacidade_dia_conta": 4000, "sessoes_d1": 2, "ferramenta": "MKTZap", "aquecimento": "Produção"}, {"conta": "BM não informada (só no MKTZap)", "conta_id": "", "bloco": "Ativa", "carteira": "PICPAY ATIVO", "numero": "(11) 5330-1474", "saude": "ALTA", "envia": "Sim", "recebe": "Sim", "disponivel": true, "capacidade_bm": "100k", "capacidade_dia_conta": 4000, "sessoes_d1": 6, "ferramenta": "MKTZap", "aquecimento": "Produção"}, {"conta": "BM não informada (só no MKTZap)", "conta_id": "", "bloco": "Ativa", "carteira": "PORTO AMIGAVEL ATIVO", "numero": "(11) 5330-1480", "saude": "ALTA", "envia": "Sim", "recebe": "Sim", "disponivel": true, "capacidade_bm": "100k", "capacidade_dia_conta": 4000, "sessoes_d1": 16, "ferramenta": "MKTZap", "aquecimento": "Produção"}, {"conta": "BM não informada (só no MKTZap)", "conta_id": "", "bloco": "Ativa", "carteira": "PORTO CARTOES ATIVO", "numero": "(11) 5330-1481", "saude": "ALTA", "envia": "Sim", "recebe": "Sim", "disponivel": true, "capacidade_bm": "100k", "capacidade_dia_conta": 4000, "sessoes_d1": 12, "ferramenta": "MKTZap", "aquecimento": "Produção"}]};
+const fmt = new Intl.NumberFormat('pt-BR'), pct = new Intl.NumberFormat('pt-BR', { style: 'percent', minimumFractionDigits: 1, maximumFractionDigits: 1 });
+const linhas = DADOS.rows, proj = {};
+const disp = (l) => l.disponivel === true || l.disponivel === 'true';
+const contas = new Map();
+linhas.forEach((l) => {
+  const c = contas.get(l.conta) || { conta: l.conta, conta_id: l.conta_id || '', capacidade_bm: l.capacidade_bm || '', capacidade_dia: Number(l.capacidade_dia_conta) || 0, sessoes_d1: 0 };
+  c.sessoes_d1 += Number(l.sessoes_d1) || 0; contas.set(l.conta, c);
+});
+const projConta = (conta) => linhas.filter((l) => l.conta === conta).reduce((a, l) => a + (proj[l.numero] || 0), 0);
+const realConta = (c) => c.capacidade_dia - c.sessoes_d1 - projConta(c.conta);
+const el = (id) => document.getElementById(id);
+
+function kpis() {
+  const total = linhas.length, d = linhas.filter(disp).length, cs = [...contas.values()];
+  el('k-linhas').textContent = fmt.format(total);
+  el('k-blocos').textContent = `${linhas.filter((l) => l.bloco === 'Ativa').length} ativas · ${linhas.filter((l) => l.bloco === 'Receptiva').length} receptivas`;
+  el('k-disp').textContent = pct.format(total ? d / total : 0);
+  el('k-disp-sub').textContent = `${fmt.format(d)} enviam e recebem`;
+  el('k-sinal').textContent = fmt.format(linhas.filter((l) => l.saude !== 'ALTA' && l.saude !== 'N/D').length);
+  el('k-cap').textContent = fmt.format(cs.reduce((a, c) => a + c.capacidade_dia, 0));
+  el('k-bms').textContent = fmt.format(cs.length);
+  realKpi();
+}
+function realKpi() {
+  const cs = [...contas.values()], v = cs.reduce((a, c) => a + realConta(c), 0), p = cs.reduce((a, c) => a + projConta(c.conta), 0);
+  el('k-real').textContent = fmt.format(v); el('k-real').classList.toggle('neg', v < 0);
+  el('k-real-sub').textContent = `− ${fmt.format(cs.reduce((a, c) => a + c.sessoes_d1, 0))} sessões d-1` + (p ? ` − ${fmt.format(p)} projeção` : '');
+  document.querySelectorAll('td.real').forEach((cel) => {
+    const c = contas.get(cel.dataset.conta), v2 = realConta(c), p2 = projConta(c.conta);
+    cel.classList.toggle('neg', v2 < 0);
+    cel.replaceChildren(fmt.format(v2));
+    const s = document.createElement('small'); s.textContent = `${fmt.format(c.capacidade_dia)} − ${fmt.format(c.sessoes_d1)}` + (p2 ? ` − ${fmt.format(p2)}` : ''); cel.append(s);
+  });
+}
+const tom = (s) => ['ALTA', 'Sim', 'Produção'].includes(s) ? 'ok' : ['MÉDIA', 'RESTRITA', 'Aquecimento', 'Limitada'].includes(s) ? 'warn' : (s === 'N/D' || !s) ? 'nd' : 'bad';
+const pill = (td, v) => { const s = document.createElement('span'); s.className = `pill ${tom(v)}`; s.textContent = v || '—'; td.append(s); };
+const COLS = ['Carteira', 'Saúde', 'Envia', 'Recebe', 'Número', 'Capacidade BM', 'Capacidade/dia', 'Sessões abertas d-1', 'Capacidade Real', 'Projeção', 'Denúncias 30d', 'Fim restrição', 'Ferramenta', 'Aquecimento'];
+const ult = (l) => ({ 'N/D': 1, 'BANIDA': 2 })[l.saude] || 0;
+
+function blocos() {
+  const box = el('blocos'); box.replaceChildren();
+  [['Ativa', 'Linhas Ativas'], ['Receptiva', 'Linhas Receptivas']].forEach(([bloco, titulo]) => {
+    const ls = linhas.filter((l) => l.bloco === bloco); if (!ls.length) return;
+    const head = document.createElement('div'); head.className = 'bv-bloco';
+    const h2 = document.createElement('h2'); h2.textContent = titulo;
+    const p = document.createElement('p');
+    const capB = [...new Set(ls.map((l) => l.conta))].reduce((a, c) => a + contas.get(c).capacidade_dia, 0);
+    p.textContent = `${fmt.format(ls.length)} linhas · ${fmt.format(ls.filter(disp).length)} disponíveis · capacidade da conta ${fmt.format(capB)} disparos/dia`;
+    head.append(h2, p);
+    const wrap = document.createElement('div'); wrap.className = 'bv-tablebox';
+    const t = document.createElement('table'); const trh = t.createTHead().insertRow();
+    COLS.forEach((c) => { const th = document.createElement('th'); th.textContent = c; trh.append(th); });
+    const tb = t.createTBody();
+    const grupos = new Map(); ls.forEach((l) => { if (!grupos.has(l.conta)) grupos.set(l.conta, []); grupos.get(l.conta).push(l); });
+    [...grupos.keys()].sort((a, b) => contas.get(b).capacidade_dia - contas.get(a).capacidade_dia || grupos.get(b).length - grupos.get(a).length).forEach((conta) => {
+      const c = contas.get(conta);
+      const gl = [...grupos.get(conta)].sort((a, b) => ult(a) - ult(b) || a.carteira.localeCompare(b.carteira, 'pt-BR'));
+      if (!/não informada/i.test(conta)) {
+        const trb = tb.insertRow(); trb.className = 'bm'; const tdb = trb.insertCell(); tdb.colSpan = COLS.length;
+        const b = document.createElement('b'); b.textContent = conta;
+        const sm = document.createElement('small'); sm.textContent = c.conta_id ? `ID ${c.conta_id}` : '';
+        const res = document.createElement('span'); res.className = 'res';
+        res.textContent = `${fmt.format(gl.length)} linhas · ${fmt.format(gl.filter(disp).length)} disponíveis · limite ${c.capacidade_bm || '—'}`;
+        tdb.append(b, sm, res);
+      }
+      gl.forEach((l, i) => {
+        const tr = tb.insertRow(); if (i % 2) tr.className = 'zebra';
+        const td = (txt, cls) => { const x = tr.insertCell(); if (cls) x.className = cls; if (txt != null) x.textContent = txt; return x; };
+        td(l.carteira, 'esq'); pill(td(), l.saude); pill(td(), l.envia); pill(td(), l.recebe); td(l.numero, 'num');
+        if (i === 0) { td(c.capacidade_bm || '—', 'merge').rowSpan = gl.length; td(fmt.format(c.capacidade_dia), 'merge cap num').rowSpan = gl.length; }
+        td(l.sessoes_d1 == null ? '—' : fmt.format(l.sessoes_d1), 'num');
+        if (i === 0) { const m = td(null, 'merge real num'); m.rowSpan = gl.length; m.dataset.conta = conta; }
+        const inp = document.createElement('input');
+        inp.type = 'number'; inp.min = '0'; inp.step = '1'; inp.className = 'proj'; inp.placeholder = '0';
+        inp.setAttribute('aria-label', `Projeção de disparos de ${l.carteira}, ${l.numero}`);
+        inp.value = proj[l.numero] ?? '';
+        inp.addEventListener('input', () => { const v = Math.max(0, Math.round(Number(inp.value) || 0)); if (v) proj[l.numero] = v; else delete proj[l.numero]; realKpi(); });
+        td().append(inp);
+        td('—', 'mudo'); td('—', 'mudo'); td(l.ferramenta || '—'); pill(td(), l.aquecimento);
+      });
+    });
+    wrap.append(t); box.append(head, wrap);
+  });
+}
+el('limpar').addEventListener('click', () => { Object.keys(proj).forEach((k) => delete proj[k]); blocos(); realKpi(); });
+blocos(); kpis();
+</script>
+</body>
+</html>
